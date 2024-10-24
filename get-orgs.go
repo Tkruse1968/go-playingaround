@@ -4,9 +4,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"time"
 
@@ -48,40 +46,20 @@ func main() {
 }
 
 func getProjects(limiter *rate.Limiter, apiToken, orgID string) ([]Project, error) {
-	url := fmt.Sprintf(snykAPIURL, orgID)
+	// ... (rest of the code remains the same)
 
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	// Assuming the response is a JSON object with a "data" field containing an array of projects
+	type ProjectResponse struct {
+		Data []Project `json:"data"`
+	}
+
+	var projectResponse ProjectResponse
+	err = json.Unmarshal(body, &projectResponse)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("token %s", apiToken))
-	req.Header.Set("Content-Type", "application/vnd.api+json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	// Assuming the response is a JSON array of projects
-	var projects []Project
-	err = json.Unmarshal(body, &projects)
-	if err != nil {
-		return nil, err
-	}
-
-	return projects, nil
+	return projectResponse.Data, nil
 }
 
 func exportProjectsToCSV(projects []Project) error {
